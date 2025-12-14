@@ -1,0 +1,20 @@
+{
+  "name": "Lecture Player Pro",
+  "short_name": "Lectures",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0f0f0f",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2989/2989835.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2989/2989835.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

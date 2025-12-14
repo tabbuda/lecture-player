@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Lecture Player Pro</title>
+    <link rel="manifest" href="manifest.json" />
+    <style>
+      /* --- PREMIUM DARK THEME --- */
+      :root {
+        --bg: #050505;
+        --surface: #161616;
+        --surface-light: #252525;
+        --text: #ffffff;
+        --text-sec: #a0a0a0;
+        --primary: #3ea6ff;
+        --phy: #b388ff;
+        --chem: #ff80ab;
+        --bio: #69f0ae;
+      }
+
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+      body {
+        background-color: var(--bg);
+        color: var(--text);
+        font-family: "Segoe UI", Roboto, sans-serif;
+        margin: 0;
+      }
+
+      /* Utilities */
+      .hidden {
+        display: none !important;
+      }
+      .fade-in {
+        animation: fadeIn 0.3s ease-in;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      /* --- SETUP SCREEN --- */
+      #setup-screen {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 24px;
+        background: radial-gradient(circle at top, #1a1a2e, #000);
+      }
+      .setup-header h1 {
+        font-size: 2rem;
+        margin: 0 0 10px 0;
+        background: linear-gradient(to right, #fff, #aaa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .setup-header p {
+        color: var(--text-sec);
+        margin-bottom: 30px;
+      }
+
+      .upload-card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 18px;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .upload-card:active {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .upload-card input {
+        display: none;
+      }
+
+      .status-badge {
+        font-size: 0.8rem;
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: #222;
+        color: #777;
+      }
+      .status-badge.done {
+        background: var(--primary);
+        color: #000;
+        font-weight: bold;
+      }
+
+      .btn-start {
+        margin-top: 20px;
+        width: 100%;
+        padding: 16px;
+        border: none;
+        border-radius: 12px;
+        background: var(--primary);
+        color: #000;
+        font-weight: 800;
+        font-size: 1rem;
+        cursor: pointer;
+        box-shadow: 0 4px 20px rgba(62, 166, 255, 0.2);
+      }
+
+      /* --- PLAYER AREA --- */
+      #player-wrapper {
+        position: sticky;
+        top: 0;
+        width: 100%;
+        background: #000;
+        z-index: 99;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+      }
+      .aspect-ratio {
+        position: relative;
+        width: 100%;
+        padding-top: 56.25%;
+      }
+      .vid-el {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      #banner-img {
+        object-fit: cover;
+      }
+
+      /* --- DASHBOARD --- */
+      #navbar {
+        padding: 15px 20px;
+        background: var(--bg);
+        border-bottom: 1px solid #222;
+        display: flex;
+        gap: 15px;
+        align-items: center;
+      }
+      #back-btn {
+        font-size: 1.5rem;
+        cursor: pointer;
+      }
+
+      #dashboard {
+        padding: 20px;
+        display: grid;
+        gap: 15px;
+      }
+      .folder-card {
+        display: flex;
+        align-items: center;
+        padding: 20px;
+        border-radius: 16px;
+        background: var(--surface);
+        border-left: 5px solid transparent;
+        transition: 0.2s;
+      }
+      .folder-card:active {
+        transform: scale(0.98);
+        background: var(--surface-light);
+      }
+      .icon-box {
+        font-size: 1.8rem;
+        margin-right: 15px;
+      }
+
+      /* --- PLAYLIST --- */
+      #playlist {
+        padding-bottom: 80px;
+      }
+
+      /* Session Loader Button */
+      .session-btn {
+        margin: 15px;
+        padding: 15px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px dashed #555;
+        border-radius: 10px;
+        text-align: center;
+        cursor: pointer;
+      }
+      .session-btn h4 {
+        margin: 0;
+        color: var(--primary);
+        font-size: 0.95rem;
+      }
+      .session-btn p {
+        margin: 5px 0 0 0;
+        color: #666;
+        font-size: 0.75rem;
+      }
+
+      /* Video List Item */
+      .vid-row {
+        display: flex;
+        gap: 12px;
+        padding: 12px 15px;
+        border-bottom: 1px solid #1a1a1a;
+        cursor: pointer;
+      }
+      .vid-row:active {
+        background: #222;
+      }
+
+      /* Static Thumbnail Design */
+      .default-thumb {
+        width: 110px;
+        height: 64px;
+        border-radius: 6px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        background: #222;
+        color: #555;
+        position: relative;
+        overflow: hidden;
+      }
+      /* Specific Colors for Subjects */
+      .thumb-phy {
+        background: rgba(179, 136, 255, 0.15);
+        color: var(--phy);
+        border: 1px solid rgba(179, 136, 255, 0.3);
+      }
+      .thumb-chem {
+        background: rgba(255, 128, 171, 0.15);
+        color: var(--chem);
+        border: 1px solid rgba(255, 128, 171, 0.3);
+      }
+      .thumb-bio {
+        background: rgba(105, 240, 174, 0.15);
+        color: var(--bio);
+        border: 1px solid rgba(105, 240, 174, 0.3);
+      }
+
+      .vid-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-width: 0;
+      }
+      .vid-title {
+        font-size: 0.9rem;
+        color: #fff;
+        margin-bottom: 4px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        line-height: 1.3;
+      }
+      .vid-sub {
+        font-size: 0.75rem;
+        color: #666;
+      }
+
+      /* Playing State */
+      .vid-row.playing {
+        background: rgba(62, 166, 255, 0.1);
+        border-left: 3px solid var(--primary);
+      }
+      .vid-row.playing .vid-title {
+        color: var(--primary);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 1. SETUP SCREEN -->
+    <div id="setup-screen" class="fade-in">
+      <div class="setup-header">
+        <h1>Fast Setup</h1>
+        <p>Select your video folders. No processing, instant ready.</p>
+      </div>
+
+      <div
+        class="upload-card"
+        onclick="document.getElementById('in-phy').click()"
+      >
+        <div>
+          <strong style="color: var(--phy)">Physics</strong>
+          <div style="font-size: 0.8rem; color: #666">
+            Select multiple files
+          </div>
+        </div>
+        <div id="badge-phy" class="status-badge">0 Added</div>
+        <input type="file" id="in-phy" multiple accept="video/*" />
+      </div>
+
+      <div
+        class="upload-card"
+        onclick="document.getElementById('in-chem').click()"
+      >
+        <div>
+          <strong style="color: var(--chem)">Chemistry</strong>
+          <div style="font-size: 0.8rem; color: #666">
+            Select multiple files
+          </div>
+        </div>
+        <div id="badge-chem" class="status-badge">0 Added</div>
+        <input type="file" id="in-chem" multiple accept="video/*" />
+      </div>
+
+      <div
+        class="upload-card"
+        onclick="document.getElementById('in-bio').click()"
+      >
+        <div>
+          <strong style="color: var(--bio)">Biology</strong>
+          <div style="font-size: 0.8rem; color: #666">
+            Select multiple files
+          </div>
+        </div>
+        <div id="badge-bio" class="status-badge">0 Added</div>
+        <input type="file" id="in-bio" multiple accept="video/*" />
+      </div>
+
+      <button id="btn-finish" class="btn-start hidden">ENTER APP</button>
+    </div>
+
+    <!-- 2. MAIN APP -->
+    <div id="app-screen" class="hidden fade-in">
+      <!-- Player -->
+      <div id="player-wrapper">
+        <div class="aspect-ratio">
+          <img
+            id="banner-img"
+            class="vid-el"
+            src="https://appxcontent.kaxa.in/paid_course3/2024-03-20-0.806359427833067.jpeg"
+          />
+          <video
+            id="main-video"
+            class="vid-el hidden"
+            controls
+            playsinline
+          ></video>
+        </div>
+      </div>
+
+      <!-- Navbar -->
+      <div id="navbar">
+        <div id="back-btn" class="hidden">&#8592;</div>
+        <div style="font-weight: bold; font-size: 1.1rem" id="nav-title">
+          My Dashboard
+        </div>
+      </div>
+
+      <!-- Dashboard -->
+      <div id="dashboard">
+        <div
+          class="folder-card"
+          style="border-color: var(--phy)"
+          onclick="openPlaylist('physics')"
+        >
+          <div class="icon-box">⚛️</div>
+          <div>
+            <h3 style="margin: 0; color: var(--phy)">Physics</h3>
+            <span id="cnt-physics" style="color: #666; font-size: 0.8rem"
+              >Empty</span
+            >
+          </div>
+        </div>
+        <div
+          class="folder-card"
+          style="border-color: var(--chem)"
+          onclick="openPlaylist('chemistry')"
+        >
+          <div class="icon-box">🧪</div>
+          <div>
+            <h3 style="margin: 0; color: var(--chem)">Chemistry</h3>
+            <span id="cnt-chemistry" style="color: #666; font-size: 0.8rem"
+              >Empty</span
+            >
+          </div>
+        </div>
+        <div
+          class="folder-card"
+          style="border-color: var(--bio)"
+          onclick="openPlaylist('biology')"
+        >
+          <div class="icon-box">🧬</div>
+          <div>
+            <h3 style="margin: 0; color: var(--bio)">Biology</h3>
+            <span id="cnt-biology" style="color: #666; font-size: 0.8rem"
+              >Empty</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Playlist -->
+      <div id="playlist" class="hidden">
+        <!-- Session Magic -->
+        <div
+          class="session-btn"
+          onclick="document.getElementById('session-input').click()"
+        >
+          <h4>📂 Tap to Load Videos</h4>
+          <p>Click here &rarr; Select All Files in Folder &rarr; Play</p>
+          <input
+            type="file"
+            id="session-input"
+            multiple
+            webkitdirectory
+            style="display: none"
+          />
+        </div>
+
+        <div id="list-container"></div>
+      </div>
+    </div>
+
+    <script>
+      // --- LOGIC ---
+      const DB_NAME = "LectureLiteDB";
+      let db;
+      let sessionFiles = {};
+      let currentPlaylist = [];
+
+      // Service Worker
+      if ("serviceWorker" in navigator)
+        navigator.serviceWorker.register("sw.js").catch(console.log);
+
+      window.onload = async () => {
+        await initDB();
+        checkStatus();
+      };
+
+      function initDB() {
+        return new Promise((resolve) => {
+          const req = indexedDB.open(DB_NAME, 1);
+          req.onupgradeneeded = (e) => {
+            db = e.target.result;
+            if (!db.objectStoreNames.contains("meta")) {
+              db.createObjectStore("meta", {
+                keyPath: "id",
+                autoIncrement: true,
+              });
+            }
+          };
+          req.onsuccess = (e) => {
+            db = e.target.result;
+            resolve();
+          };
+        });
+      }
+
+      function checkStatus() {
+        const tx = db.transaction("meta", "readonly");
+        const req = tx.objectStore("meta").count();
+        req.onsuccess = () => {
+          if (req.result > 0) launchApp();
+          else
+            document.getElementById("setup-screen").classList.remove("hidden");
+        };
+      }
+
+      // --- INSTANT SETUP (No Thumbnails) ---
+      ["phy", "chem", "bio"].forEach((sub) => {
+        document.getElementById(`in-${sub}`).addEventListener("change", (e) => {
+          const files = Array.from(e.target.files);
+          if (!files.length) return;
+
+          const badge = document.getElementById(`badge-${sub}`);
+          badge.innerText = "Saving...";
+
+          const subName =
+            sub === "phy"
+              ? "physics"
+              : sub === "chem"
+              ? "chemistry"
+              : "biology";
+          const tx = db.transaction("meta", "readwrite");
+          const store = tx.objectStore("meta");
+
+          files.forEach((f) => {
+            // Just save name & subject. 0 Processing time.
+            store.add({ name: f.name, subject: subName });
+          });
+
+          tx.oncomplete = () => {
+            badge.innerText = `✅ ${files.length} Saved`;
+            badge.classList.add("done");
+            document.getElementById("btn-finish").classList.remove("hidden");
+          };
+        });
+      });
+
+      document.getElementById("btn-finish").onclick = () => {
+        document.getElementById("setup-screen").classList.add("hidden");
+        launchApp();
+      };
+
+      // --- APP LAUNCH ---
+      function launchApp() {
+        document.getElementById("app-screen").classList.remove("hidden");
+        updateCounts();
+      }
+
+      function updateCounts() {
+        const subs = ["physics", "chemistry", "biology"];
+        const tx = db.transaction("meta", "readonly");
+        store = tx.objectStore("meta");
+        store.getAll().onsuccess = (e) => {
+          const all = e.target.result;
+          subs.forEach((s) => {
+            const cnt = all.filter((x) => x.subject === s).length;
+            document.getElementById(`cnt-${s}`).innerText = `${cnt} Videos`;
+          });
+        };
+      }
+
+      // --- NAVIGATION ---
+      window.openPlaylist = (subject) => {
+        document.getElementById("dashboard").classList.add("hidden");
+        document.getElementById("playlist").classList.remove("hidden");
+        document.getElementById("back-btn").classList.remove("hidden");
+        document.getElementById("nav-title").innerText =
+          subject.charAt(0).toUpperCase() + subject.slice(1);
+
+        const tx = db.transaction("meta", "readonly");
+        store = tx.objectStore("meta");
+        store.getAll().onsuccess = (e) => {
+          const all = e.target.result;
+          currentPlaylist = all
+            .filter((x) => x.subject === subject)
+            .sort((a, b) => a.name.localeCompare(b.name));
+          renderList(subject);
+        };
+      };
+
+      document.getElementById("back-btn").onclick = () => {
+        document.getElementById("playlist").classList.add("hidden");
+        document.getElementById("dashboard").classList.remove("hidden");
+        document.getElementById("back-btn").classList.add("hidden");
+        document.getElementById("nav-title").innerText = "My Dashboard";
+
+        // Pause
+        const v = document.getElementById("main-video");
+        v.pause();
+        v.classList.add("hidden");
+        document.getElementById("banner-img").classList.remove("hidden");
+      };
+
+      // --- RENDER LIST (With Default Icons) ---
+      function renderList(subject) {
+        const container = document.getElementById("list-container");
+        container.innerHTML = "";
+
+        // Icon Selection
+        let iconChar = "▶";
+        let thumbClass = "default-thumb";
+        if (subject === "physics") {
+          iconChar = "⚛️";
+          thumbClass += " thumb-phy";
+        }
+        if (subject === "chemistry") {
+          iconChar = "🧪";
+          thumbClass += " thumb-chem";
+        }
+        if (subject === "biology") {
+          iconChar = "🧬";
+          thumbClass += " thumb-bio";
+        }
+
+        if (currentPlaylist.length === 0) {
+          container.innerHTML =
+            '<div style="text-align:center; padding:20px; color:#555">No videos here.</div>';
+          return;
+        }
+
+        currentPlaylist.forEach((item, idx) => {
+          const cleanName = item.name
+            .replace(/\.[^/.]+$/, "")
+            .replace(/[-_]/g, " ");
+
+          const div = document.createElement("div");
+          div.className = "vid-row";
+          div.id = `vid-${idx}`;
+          div.innerHTML = `
+                    <div class="${thumbClass}">
+                        ${iconChar}
+                    </div>
+                    <div class="vid-info">
+                        <div class="vid-title">${cleanName}</div>
+                        <div class="vid-sub">Episode ${idx + 1}</div>
+                    </div>
+                `;
+          div.onclick = () => playVideo(item.name, idx);
+          container.appendChild(div);
+        });
+      }
+
+      // --- SESSION & PLAY ---
+      document
+        .getElementById("session-input")
+        .addEventListener("change", (e) => {
+          const files = Array.from(e.target.files);
+          sessionFiles = {};
+          files.forEach((f) => (sessionFiles[f.name] = f));
+
+          const btn = document.querySelector(".session-btn");
+          btn.style.borderColor = "#3ea6ff";
+          btn.querySelector(
+            "h4"
+          ).innerText = `✅ Ready: ${files.length} Videos Loaded`;
+          btn.querySelector("h4").style.color = "#3ea6ff";
+        });
+
+      function playVideo(fname, idx) {
+        const file = sessionFiles[fname];
+        if (!file) {
+          alert(
+            "⚠️ Video not loaded.\nClick the top box to select your video folder first."
+          );
+          return;
+        }
+
+        // Highlighting
+        document
+          .querySelectorAll(".vid-row")
+          .forEach((r) => r.classList.remove("playing"));
+        document.getElementById(`vid-${idx}`).classList.add("playing");
+
+        const v = document.getElementById("main-video");
+        v.src = URL.createObjectURL(file);
+        document.getElementById("banner-img").classList.add("hidden");
+        v.classList.remove("hidden");
+        v.play();
+
+        v.onended = () => {
+          if (idx + 1 < currentPlaylist.length)
+            playVideo(currentPlaylist[idx + 1].name, idx + 1);
+        };
+      }
+    </script>
+  </body>
+</html>
